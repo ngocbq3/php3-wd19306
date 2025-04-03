@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -13,11 +16,22 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = DB::table('products')
-            ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select(['products.*', 'categories.name as cate_name'])
-            ->orderBy('products.id', 'desc')
+        //Query builder
+        // $products = DB::table('products')
+        //     ->join('categories', 'categories.id', '=', 'products.category_id')
+        //     ->select(['products.*', 'categories.name as cate_name'])
+        //     ->orderBy('products.id', 'desc')
+        //     ->paginate(10);
+
+        //Eloquent ORM
+        //Lấy tất cả sản phẩm
+        $products = Product::all();
+        //Phân trang và sắp xếp
+        $products = Product::with('category')
+            ->orderBy('id', 'DESC')
             ->paginate(10);
+        // return $products;
+
         return view('admin.products.index', compact('products'));
     }
 
@@ -26,7 +40,12 @@ class ProductController extends Controller
      */
     public function create()
     {
-        $categories = DB::table('categories')->get();
+        //Query builder
+        // $categories = DB::table('categories')->get();
+
+        //Eloquent ORM
+        $categories = Category::all();
+
         return view('admin.products.create', compact('categories'));
     }
 
@@ -36,7 +55,17 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         // dd($request->all());
-        $data = $request->except('_token');
+        // $data = $request->except('_token');//loại bỏ input _token
+
+        $data = $request->validate([
+            'name'  => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric'],
+            'category_id' => ['required', 'integer'],
+            'description' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'stock' => ['required', 'integer'],
+        ]);
+
         //Xử lý ảnh
         if ($request->hasFile('image')) {
 
@@ -44,7 +73,10 @@ class ProductController extends Controller
         }
         $data['image'] = $path_image ?? '';
 
-        DB::table('products')->insert($data);
+        // DB::table('products')->insert($data);//Query builder
+
+        Product::query()->create($data); //Eloquent ORM
+
         return redirect()->route('products.index')->with('message', 'Thêm dữ liệu thành công');
     }
 
@@ -79,7 +111,15 @@ class ProductController extends Controller
      */
     public function destroy(string $id)
     {
-        DB::table('products')->delete($id);
+        // DB::table('products')->delete($id);
+
+        $product = Product::query()->find($id);
+
+        if (Storage::fileExists($product->image)) {
+            Storage::delete($product->image);
+        }
+
+        $product->delete();
         return redirect()->route('products.index')->with('message', 'Xóa dữ liệu thành công');
     }
 }
