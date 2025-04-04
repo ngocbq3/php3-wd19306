@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProductRequest;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -52,19 +53,12 @@ class ProductController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
         // dd($request->all());
         // $data = $request->except('_token');//loại bỏ input _token
 
-        $data = $request->validate([
-            'name'  => ['required', 'string', 'max:255'],
-            'price' => ['required', 'numeric'],
-            'category_id' => ['required', 'integer'],
-            'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
-            'stock' => ['required', 'integer'],
-        ]);
+        $data = $request->all();
 
         //Xử lý ảnh
         if ($request->hasFile('image')) {
