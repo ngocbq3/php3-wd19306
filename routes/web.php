@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HelloController;
 use App\Http\Controllers\MyController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Middleware\AuthAdminCheck;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -36,9 +38,15 @@ Route::get('/products/{id}', [ProductController::class, 'show'])->name('products
 Route::get('/category/{id}', [CategoryController::class, 'show'])->name('category.show');
 
 //Admin
-Route::prefix('admin')->group(function () {
-    Route::resource('/products', AdminProductController::class);
+Route::middleware(['auth', 'auth.role:admin'])->group(function () {
+    Route::prefix('admin')->group(function () {
+        Route::resource('/products', AdminProductController::class);
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('users/{id}/toggle-role', [UserController::class, 'toggleRole'])->name('users.toggleRole');
+    });
 });
+
+
 Route::get('/', function () {
     return view('welcome');
 });
